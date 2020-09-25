@@ -7,12 +7,7 @@ import java.util.HashMap;
 
 public class FactoryImpl extends UnicastRemoteObject implements FactoryRI {
 
-
-    public User user;
-
     public DataBase dataBase;
-
-    private HashMap<String, SessionRI> sessions = new HashMap<>();
 
     protected FactoryImpl() throws RemoteException {
         dataBase = new DataBase();
@@ -33,7 +28,7 @@ public class FactoryImpl extends UnicastRemoteObject implements FactoryRI {
         System.out.println(user.toString());
         if (user != null) {
             session = new SessionImpl(dataBase, this, user.getName());
-            sessions.put(username, session);
+            this.dataBase.getSessions().put(username, session);
         }
         return session;
     }
@@ -65,6 +60,6 @@ public class FactoryImpl extends UnicastRemoteObject implements FactoryRI {
      */
     @Override
     public void removeSession(String username) {
-        this.sessions.remove(username);
+        this.dataBase.getSessions().remove(username);
     }
 }

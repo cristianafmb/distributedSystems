@@ -1,5 +1,7 @@
 package edu.ufp.inf.sd.rmi.util.threading;
 
+import java.io.Serializable;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -16,7 +18,7 @@ import java.util.logging.Logger;
  * => Thread pool size = N*(1+WT/ST).
  * Use profiling to determine WT (mean waiting time) and ST (mean service time).
  */
-public class ThreadPool {
+public class ThreadPool  implements Serializable {
 
     private final int poolsize;
 
@@ -64,6 +66,7 @@ public class ThreadPool {
         }
     }
 
+
     /**
      * Each instance of PoolThread waits on the list of Runnable Sessions to
      * pick a Runnable and run it.
@@ -80,8 +83,8 @@ public class ThreadPool {
                 synchronized (listRunnableThreads) {
                     while (listRunnableThreads.isEmpty()) {
                         try {
+
                             listRunnableThreads.wait();
-                            //Aqui percorre texto e verifica o hash encontrado == hash dado ?
                         } catch (InterruptedException ex) {
                             Logger.getLogger(ThreadPool.class.getName()).log(Level.SEVERE, null, ex);
                         }

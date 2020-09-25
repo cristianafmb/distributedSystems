@@ -1,11 +1,11 @@
 package edu.ufp.inf.sd.rmi.hashmatching.server;
 
+import edu.ufp.inf.sd.rmi.hashmatching.client.State;
 import edu.ufp.inf.sd.rmi.hashmatching.client.WorkerImpl;
 import edu.ufp.inf.sd.rmi.hashmatching.client.WorkerRI;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.List;
 
 public interface TaskGroupRI extends Remote {
 
@@ -14,8 +14,9 @@ public interface TaskGroupRI extends Remote {
      *
      * @param w - worker a ser adicionado
      * @throws RemoteException
+     * @return
      */
-    void attach(WorkerRI w) throws RemoteException;
+    boolean attach(WorkerRI w) throws RemoteException;
 
     /**
      * remove o worker passado em parametro do array list de workers da task
@@ -45,7 +46,9 @@ public interface TaskGroupRI extends Remote {
      *
      * @throws RemoteException
      */
-    void prepareWork() throws RemoteException;
+    void prepareWork(int users) throws RemoteException;
+
+    public TaskGroupImpl getTaskGroup() throws RemoteException;
 
     /**
      * envia para o worker passado:
@@ -66,6 +69,16 @@ public interface TaskGroupRI extends Remote {
      * @param state   -  hashCode, WorkerImpl worker, Thread thread, String pass - pass encontrada
      * @throws RemoteException
      */
-    void notifyWorkers(State state) throws RemoteException;
+    public void notifyWorkers(State state) throws RemoteException;
+
+    String getHashCode() throws RemoteException;
+
+    Integer getNumberOfParts() throws RemoteException;
+
+    Integer getAssignedWork() throws RemoteException;
+
+    boolean moreWork(WorkerRI worker) throws RemoteException;
+
+    public int getDelta() throws RemoteException;
 
 }

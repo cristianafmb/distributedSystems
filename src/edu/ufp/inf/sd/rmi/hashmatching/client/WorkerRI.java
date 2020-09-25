@@ -1,19 +1,23 @@
 package edu.ufp.inf.sd.rmi.hashmatching.client;
 
-import edu.ufp.inf.sd.rmi.hashmatching.server.State;
+import edu.ufp.inf.sd.rmi.hashmatching.server.TaskGroupRI;
+import edu.ufp.inf.sd.rmi.util.threading.ThreadPool;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
 
 public interface WorkerRI extends Remote {
+
+
     /**
      * imprime quem encontrou o hash
      *
-     * @param s - state da thread com o worker que encontrou o hash
      * @throws RemoteException
      */
-    void update(State s) throws RemoteException;
+    public void update() throws RemoteException ;
+
+    public String getResponsible() throws RemoteException ;
 
     /**
      * inicia a thread pool, para encontrarem o hash
@@ -22,15 +26,20 @@ public interface WorkerRI extends Remote {
      * @param myLines - texto que se encontra no ficheiro "testdarkc0de.txt"
      * @throws RemoteException
      */
-    void initAllThreads(List<String> myLines) throws RemoteException;
+    void initAllThreads(List<String> myLines,boolean moreWork) throws RemoteException;
 
     WorkerImpl getWorker() throws RemoteException;
 
-    String getName();
+    TaskGroupRI getTg() throws RemoteException;
 
-    Integer getNumberOfLine();
+    String getName() throws RemoteException;
 
-    void setNumberOfLine(Integer lineAux);
+    Integer getNumberOfLine() throws RemoteException;
 
-    void setDelta(Integer delta);
+    void setNumberOfLine(Integer lineAux) throws RemoteException;
+
+    public void setState(State state) throws RemoteException;
+
+    void setDelta(Integer delta) throws RemoteException;
+    public void initEachThread(List<String> linesForHash, ThreadPool pool) throws RemoteException;
 }

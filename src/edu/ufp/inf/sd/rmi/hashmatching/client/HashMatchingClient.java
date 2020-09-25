@@ -2,6 +2,7 @@ package edu.ufp.inf.sd.rmi.hashmatching.client;
 
 import edu.ufp.inf.sd.rmi.hashmatching.server.FactoryRI;
 import edu.ufp.inf.sd.rmi.hashmatching.server.SessionRI;
+import edu.ufp.inf.sd.rmi.hashmatching.server.TaskGroupImpl;
 import edu.ufp.inf.sd.rmi.hashmatching.server.TaskGroupRI;
 import edu.ufp.inf.sd.rmi.util.rmisetup.SetupContextRMI;
 
@@ -12,6 +13,7 @@ import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -120,14 +122,15 @@ public class HashMatchingClient {
             String taskNameOfWorker;
             System.out.println("Choose:\n" + "1: CREATE TASK GROUPS\n" + "2: DELETE TASK GROUP \n" +
                     "3: LIST TASKS GROUP\n" + "4: ASSOCIATE WORKER AT TASK GROUP\n" + "5: LIST WORKERS OF TASK GROUP\n" +
-                    "6: START WORK\n" + "7: LOGOUT\n\n");
+                    "6: START WORK\n" +  "7: LIST ACTIVE TASK GROUPS \n" + "8: JOIN TASK GROUP \n" + "9: LOGOUT\n\n");
             Integer menuOption = Integer.valueOf(this.readInput("Menu Option"));
             System.out.println(menuOption);
             while (!menuOption.equals(-1)) {
                 switch (menuOption) {
                     case 1:
                         String taskNameCreate = this.readInput("Task Name To Create");
-                        boolean checkCreate = this.sessionRI.createTaskGroup(taskNameCreate);
+                        String numberOfParts = this.readInput("the number of parts that you want");
+                        boolean checkCreate = this.sessionRI.createTaskGroup(taskNameCreate,numberOfParts);
                         if (checkCreate == false)
                             System.out.println("Taskname '" + taskNameCreate + "' already been used, Choose wisely!\n");
                         menuOption = 0;
@@ -137,7 +140,7 @@ public class HashMatchingClient {
                         taskNameOfWorker = this.readInput("Task Name To Delete");
                         boolean checkDelete = this.sessionRI.deleteTaskGroup(taskNameOfWorker);
                         if (checkDelete == false)
-                            System.out.println("\nTask group '" + taskNameOfWorker + "' couldn't get deleted!!");
+                            System.out.println("\nYou can't delete Task group '" + taskNameOfWorker );
                         else System.out.println("\nTask Group'" + taskNameOfWorker + "' has been deleted!!");
                         menuOption = 0;
                         break;
@@ -151,25 +154,40 @@ public class HashMatchingClient {
 
                     case 4:
                         //Associar n worker a x task
-                        //Integer nWorkers = Integer.valueOf(this.readInput("How Many Workers Do You Want?"));
                         String taskNameAttachWorker = this.readInput("Task Name To Attach Workers");
+                        TaskGroupRI tgRI = this.sessionRI.getTaskGroup(taskNameAttachWorker);
+                        if(tgRI==null){
+                            System.out.println("You can't add workers to "+ taskNameAttachWorker +" because you don't have access");
+                            menuOption = 0;
+                            break;
+                        }
                         String workerName = this.readInput("Worker");
 
-                        System.out.println("Voltei ao menu 2!!!!");
-
-                        boolean checkAttach = this.sessionRI.attachWorker(workerName, taskNameAttachWorker);
+                      //  boolean checkAttach = this.sessionRI.attachWorker(workerName,taskNameAttachWorker);
+                        WorkerRI worker = new WorkerImpl(workerName, tgRI,this.sessionRI.getUsername());
+                        boolean checkAttach = tgRI.attach(worker);
                         if (checkAttach == false)
                             System.out.println("\nWorker '" + workerName + "' couldn't get attached!!");
                         else System.out.println("\nWorker'" + workerName + "' has been attached!!");
-
-
                         menuOption = 0;
                         break;
                     case 5:
                         taskNameOfWorker = this.readInput("Task Name To See Workers");
                         System.out.println("\n Workers from " + taskNameOfWorker + ":\n");
-                        for (String w : this.sessionRI.listWorkers(taskNameOfWorker)) {
-                            System.out.println(w);
+
+                        //verify access of task group
+                        TaskGroupRI taskGroup = this.sessionRI.getTaskGroup(taskNameOfWorker);
+                        if(taskGroup==null){
+                            System.out.println("You can't add workers to "+ taskGroup + ", you don't have access");
+                            menuOption = 0;
+                            break;
+                        }
+                        List<WorkerRI> out = this.sessionRI.listWorkers(taskNameOfWorker);
+                        if(out.isEmpty()){
+                            System.out.println("You don't have workers on this task group");
+                        }
+                        for(int i=0; i<out.size(); i++){
+                            System.out.println("\n"+out.get(i).getName()+"\n");
                         }
                         menuOption = 0;
                         break;
@@ -178,12 +196,28 @@ public class HashMatchingClient {
                         taskNameOfWorker = this.readInput("Task Name To Start Work");
                         boolean checkWorker = this.sessionRI.startWork(taskNameOfWorker);
                         if (checkWorker == false)
-                            System.out.println("\nWorker '" + taskNameOfWorker + "' couldn't get work!!");
-                        else System.out.println("\nWorker'" + taskNameOfWorker + "' has been start work!!");
+                            System.out.println("\nYou don't have access to: " + taskNameOfWorker);
+                        else System.out.println("\nTask '" + taskNameOfWorker + "' has been start work!!");
                         menuOption = 0;
                         break;
-
                     case 7:
+                        List<String> strings = this.sessionRI.getActiveTaskGroups();
+                        for (String s: strings) {
+                            System.out.println(s);
+                        }
+                        menuOption = -1;
+                        break;
+                    case 8:
+                        String taskName = this.readInput("Task Name To Join");
+                        boolean check = this.sessionRI.joinTaskGroup(taskName);
+                        if(check){
+                            System.out.println("Joined in "+taskName);
+                        }else{
+                            System.out.println("limete maximo atingido de users");
+                        }
+                        menuOption =0;
+                        break;
+                    case 9:
                         this.sessionRI.logOut();
                         menuOption = -1;
                         break;

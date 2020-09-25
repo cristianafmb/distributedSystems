@@ -1,5 +1,7 @@
 package edu.ufp.inf.sd.rmi.hashmatching.server;
 
+import edu.ufp.inf.sd.rmi.hashmatching.client.WorkerRI;
+
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
@@ -15,7 +17,7 @@ public interface SessionRI extends Remote {
      * @return false se for null o nome ou se já houver uma task com aquele nome, true se conseguir criar na base de dados
      * @throws RemoteException
      */
-    boolean createTaskGroup(String name) throws RemoteException;
+    boolean createTaskGroup(String name,String numberOfParts) throws RemoteException;
 
     /**
      * lista taskgroup daquele utilizador
@@ -54,7 +56,7 @@ public interface SessionRI extends Remote {
      * @return - lista de strings com info dos workers daquela task
      * @throws RemoteException
      */
-    List<String> listWorkers(String taskGroupName) throws RemoteException;
+    public List<WorkerRI> listWorkers(String taskGroupName) throws RemoteException;
 
     /**
      * envia sinal para a taskgroup preparar para inciar o trabalho (lançar threads para o hashing)
@@ -73,4 +75,11 @@ public interface SessionRI extends Remote {
      */
     void logOut() throws RemoteException;
 
+    public TaskGroupRI getTaskGroup(String taskName) throws RemoteException;
+
+    public List<String> getActiveTaskGroups () throws RemoteException;
+
+    boolean joinTaskGroup(String taskName) throws RemoteException;
+
+    String getUsername() throws RemoteException;
 }

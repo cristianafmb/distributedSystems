@@ -37,12 +37,12 @@ public class SessionImpl implements SessionRI {
      * @throws RemoteException
      */
     @Override
-    public boolean createTaskGroup(String name) throws RemoteException {
+    public boolean createTaskGroup(String name,String numberOfParts) throws RemoteException {
         if (username == null) {
             System.out.println("username is null \n");
             return false;
         }
-        TaskGroupImpl taskGroup = new TaskGroupImpl(username, name);
+        TaskGroupImpl taskGroup = new TaskGroupImpl(username, name,numberOfParts);
         if (this.dataBase.getTaskGroupsOfUser(username) != null) {
             for (TaskGroupImpl tg : this.dataBase.getTaskGroupsOfUser(username)) {
                 if (tg.getName().equals(name)) { // task name already been created then return false
@@ -50,7 +50,9 @@ public class SessionImpl implements SessionRI {
                 }
             }
         }
+        taskGroup.attachUser(username);
         this.dataBase.addTaskGroup(taskGroup);
+        this.dataBase.addTaskToAllTasks(taskGroup);
         return true;
     }
 
@@ -85,6 +87,7 @@ public class SessionImpl implements SessionRI {
                     return true;
                 }
             }
+            return false;
         }
         return false;
     }
@@ -103,10 +106,10 @@ public class SessionImpl implements SessionRI {
     @Override
     public boolean attachWorker(String workerName, String task) throws RemoteException {
         TaskGroupImpl tg = this.dataBase.getTaskGroupsByName(task, username);
-        WorkerRI worker = new WorkerImpl(workerName, tg);
+        WorkerRI worker = new WorkerImpl(workerName, tg,username);
         List<String> tasks = new ArrayList<>();
         if (tg != null) {
-            List<WorkerImpl> workersInTask = this.dataBase.getWorkersTaskGroup(task);//get task groups worker
+            List<WorkerRI> workersInTask = this.dataBase.getWorkersTaskGroup(task);//get task groups worker
             workersInTask.add(worker.getWorker());//add new worker
             tg.attach(worker);//put array list
             return true;
@@ -122,17 +125,14 @@ public class SessionImpl implements SessionRI {
      * @throws RemoteException
      */
     @Override
-    public List<String> listWorkers(String taskGroupName) throws RemoteException {
+    public List<WorkerRI> listWorkers(String taskGroupName) throws RemoteException {
         System.out.println("\nlistWorker():");
-        List<String> workers = new ArrayList<>();
-        if (this.dataBase.getWorkersOfTaskGroup(taskGroupName, this.username) != null) {
-            for (WorkerImpl worker : this.dataBase.getWorkersOfTaskGroup(taskGroupName, this.username)) {
-                System.out.println("listWorkers(): worker=" + worker.getName());
-                workers.add(worker.getName());
-            }
-            return workers;
-        }
-        return new ArrayList<>();
+        List<WorkerRI> workers = new ArrayList<>();
+        List<WorkerRI> f = this.dataBase.getWorkersOfTaskGroup(taskGroupName, username);
+       for (int i=0; i<f.size(); i++){
+           workers.add(f.get(i));
+       }
+       return workers;
     }
 
     /**
@@ -144,12 +144,16 @@ public class SessionImpl implements SessionRI {
      */
     @Override
     public boolean startWork(String taskGroup) throws RemoteException {
+        System.out.println("\n Start work(): \n");
         TaskGroupImpl tg = this.dataBase.getTaskGroupsByName(taskGroup, this.username);
-        for (WorkerImpl w : this.dataBase.getWorkersOfTaskGroup(taskGroup, this.username)) {
-            tg.prepareWork();
-            return true;
+        if(tg == null){
+            return false;
         }
-        return false;
+       // System.out.println("\n Start work(): after get tg \n");
+
+            tg.prepareWork(tg.getNumberOfParts());
+
+        return true;
     }
 
     /**
@@ -163,4 +167,38 @@ public class SessionImpl implements SessionRI {
         factory.removeSession(this.username);
     }
 
+    @Override
+    public TaskGroupRI getTaskGroup(String taskName) throws RemoteException{
+        List<TaskGroupImpl> tgs = this.dataBase.getTaskGroupsOfUser(username);
+        for (TaskGroupImpl t:tgs) {
+            if(t.getName().equalsIgnoreCase(taskName)){
+                return t;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public List<String> getActiveTaskGroups() throws RemoteException {
+        List<String> taskGroups = this.dataBase.getActiveTaskGroups();
+        if(taskGroups != null) {
+            return taskGroups;
+        }
+        return null;
+    }
+
+    @Override
+    public boolean joinTaskGroup(String taskName) throws RemoteException {
+        boolean check= this.dataBase.joinTaskGroup(taskName,this.username);
+        if(check){
+            TaskGroupImpl task = this.dataBase.allTasks.get(taskName);
+            task.attachUser(this.username);
+        }
+        return check;
+    }
+
+    @Override
+    public String getUsername() throws RemoteException{
+        return username;
+    }
 }

@@ -1,8 +1,10 @@
 package edu.ufp.inf.sd.rmi.hashmatching.server;
 
 import edu.ufp.inf.sd.rmi.hashmatching.client.WorkerImpl;
+import edu.ufp.inf.sd.rmi.hashmatching.client.WorkerRI;
 
 import java.io.Serializable;
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,8 +15,20 @@ public class DataBase implements Serializable {
     // hashmap of taskGroup of users (the string is the name of user)
     HashMap<String, List<TaskGroupImpl>> taskGroups = new HashMap<String, List<TaskGroupImpl>>();
     //hashmap of workers in taskGroup ( the string is the name of task group)
-    HashMap<String, List<WorkerImpl>> taskWorkers = new HashMap<String, List<WorkerImpl>>();
+    HashMap<String, List<WorkerRI>> taskWorkers = new HashMap<String, List<WorkerRI>>();
+
+
+    //all tasks groups (the string is the name of task)
+    HashMap<String, TaskGroupImpl> allTasks = new HashMap<String, TaskGroupImpl>();
     private Vector<User> users = new Vector<>();
+
+    List<String> activeTaskGroups = new ArrayList<>();
+
+    public HashMap<String, SessionRI> getSessions() {
+        return sessions;
+    }
+
+    private HashMap<String, SessionRI> sessions = new HashMap<>();
 
 
     public DataBase() {
@@ -121,7 +135,7 @@ public class DataBase implements Serializable {
         }
         myTasks.add(taskGroup);
         this.taskGroups.put(taskGroup.getOwner(), myTasks); // guardar na database
-        this.taskWorkers.put(taskGroup.getName(), new ArrayList<WorkerImpl>()); // guardar na database
+        this.taskWorkers.put(taskGroup.getName(), new ArrayList<WorkerRI>()); // guardar na database
 
     }
 
@@ -151,6 +165,7 @@ public class DataBase implements Serializable {
         return null;
     }
 
+
     /**
      * procura todos os workers de x taskgroup
      *
@@ -158,8 +173,13 @@ public class DataBase implements Serializable {
      * @param username - owner da taskgroup
      * @return todos os workers de x taskgroup
      */
-    public List<WorkerImpl> getWorkersOfTaskGroup(String taskName, String username) {
-        return this.taskWorkers.get(taskName);
+    public List<WorkerRI> getWorkersOfTaskGroup(String taskName, String username) {
+        List<WorkerRI> workers = new ArrayList<>();
+        TaskGroupImpl tg = this.allTasks.get(taskName);
+        for(WorkerRI w : tg.getWorkers()){
+            workers.add(w);
+        }
+        return workers;
     }
 
     /**
@@ -168,7 +188,61 @@ public class DataBase implements Serializable {
      * @param task - nome da task que se quer saber os workers
      * @return workers daquela task
      */
-    public List<WorkerImpl> getWorkersTaskGroup(String task) {
+    public List<WorkerRI> getWorkersTaskGroup(String task) {
         return this.taskWorkers.get(task);
+    }
+
+    /**
+     * taskGroups ativas
+     * @return
+     */
+    public List<String> getActiveTaskGroups() {
+        if(this.activeTaskGroups != null && !this.activeTaskGroups.isEmpty()){
+            return this.activeTaskGroups;
+        }
+        return null;
+    }
+
+    /**
+     * imprime os users associados aquela task
+     * verifica se o numero de users associados aquela task é menor que n partes
+     * se for adiciona o user aquela task
+     * se nao retorna false
+     * @param taskName
+     * @param username
+     * @return
+     * @throws RemoteException
+     */
+    public boolean joinTaskGroup(String taskName, String username) throws RemoteException {
+
+        TaskGroupImpl taskGroup = this.allTasks.get(taskName);
+        System.out.println("users of task group");
+        for (String s :
+                taskGroup.getUsers()) {
+            System.out.println(s);
+        }
+
+        if(taskGroup.getUsers().size()>=taskGroup.getNumberOfParts()){
+            System.out.println("excedeu o numero de users");
+            return false;
+        }
+        List<TaskGroupImpl> list = this.taskGroups.get(username);
+        if(list==null){
+            list = new ArrayList<>();
+        }
+        list.add(taskGroup);
+        this.taskGroups.put(username,list);
+        System.out.println("adicionou o user à task");
+        System.out.println("tasks of user "+username+"->"+this.taskGroups.get(username));
+
+        return true;
+    }
+
+    /**
+     * adiciona a task no array de allTasks
+     * @param taskGroup
+     */
+    public void addTaskToAllTasks(TaskGroupImpl taskGroup) {
+        this.allTasks.put(taskGroup.getName(),taskGroup);
     }
 }
